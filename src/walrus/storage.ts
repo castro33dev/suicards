@@ -1,14 +1,12 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const PUBLISHER = process.env.WALRUS_PUBLISHER!;
-const AGGREGATOR = process.env.WALRUS_AGGREGATOR!;
+const PUBLISHER = 'https://walrus-testnet-publisher.nodes.guru';
+const AGGREGATOR = 'https://walrus-testnet-aggregator.nodes.guru';
 
 // Save data to Walrus
 export const saveToWalrus = async (data: object) => {
   const response = await axios.put(
-    `${PUBLISHER}/v1/blobs`,
+    `${PUBLISHER}/v1/blobs?epochs=2`,
     JSON.stringify(data),
     {
       headers: { 'Content-Type': 'application/json' },

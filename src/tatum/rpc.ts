@@ -1,9 +1,7 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const TATUM_API_KEY = process.env.TATUM_API_KEY!;
-const SUI_RPC_URL = process.env.SUI_RPC_URL!;
+const TATUM_API_KEY = import.meta.env.VITE_TATUM_API_KEY;
+const SUI_RPC_URL = import.meta.env.VITE_SUI_RPC_URL;
 
 export const suiRPC = async (method: string, params: any[]) => {
   const response = await axios.post(
