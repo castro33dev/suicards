@@ -9,5 +9,17 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: {
+      '/walrus-publisher': {
+        target: 'https://publisher.walrus-testnet.walrus.space',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/walrus-publisher/, ''),
+      },
+      '/walrus-aggregator': {
+        target: 'https://aggregator.walrus-testnet.walrus.space',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/walrus-aggregator/, ''),
+      },
+    },
   },
 });
