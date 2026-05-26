@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { createPlayer } from '../game/cards';
 import { startGame, playRound, GameState } from '../game/engine';
 import { getLeaderboard, updateLeaderboard, LeaderboardEntry } from '../game/leaderboard';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
+import WalletButton from './components/WalletButton';
+
+const PACKAGE_ID = "0xaec6ffd87cbb3230291aa29f944af7d2448c163285c4a9176fcab5ee3c4ccea4";
+const LEADERBOARD_ID = "0x77aa34b0c5f58caa0ac1c410b1c13f5597c206454347380c1fca1cfcfa12f3cd";
 
 const App = () => {
   const [player1Name, setPlayer1Name] = useState('');
@@ -13,6 +19,10 @@ const App = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'game' | 'leaderboard'>('game');
   const [lastMove, setLastMove] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const account = useCurrentAccount();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   useEffect(() => {
     setLeaderboard(getLeaderboard());
@@ -21,12 +31,43 @@ const App = () => {
   const handleStartGame = async () => {
     if (!player1Name || !player2Name) return;
     setLoading(true);
+    setTxHash(null);
     const { state, blobId } = await startGame(player1Name, player2Name, createPlayer);
     setGameState(state);
     setBlobId(blobId);
     setLoading(false);
     setGameOver(false);
     setLastMove(null);
+  };
+
+  const recordOnChain = (winner: string, loser: string, isDraw: boolean) => {
+    if (!account) return;
+    try {
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${PACKAGE_ID}::leaderboard::record_result`,
+        arguments: [
+          tx.object(LEADERBOARD_ID),
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(winner))),
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(loser))),
+          tx.pure.bool(isDraw),
+        ],
+      });
+
+      signAndExecute(
+        { transaction: tx },
+        {
+          onSuccess: (result) => { setTimeout(() => {
+            setTxHash(result.digest); }, 500);
+          },
+          onError: (err) => {
+            console.error('On-chain record failed:', err);
+          },
+        }
+      );
+    } catch (err) {
+      console.error('Transaction build failed:', err);
+    }
   };
 
   const handlePlayRound = () => {
@@ -42,49 +83,54 @@ const App = () => {
         newState.winner
       );
       setLeaderboard(updated);
+
+      if (account) {
+        const isDraw = newState.winner === null;
+        const winner = newState.winner || newState.player1.name;
+        const loser = newState.winner === newState.player1.name
+          ? newState.player2.name
+          : newState.player1.name;
+        recordOnChain(winner, loser, isDraw);
+      }
     }
   };
 
   const typeColors: Record<string, string> = {
-    fire: '#ef4444',
-    water: '#3b82f6',
-    earth: '#84cc16',
-    air: '#a78bfa',
+    fire: '#ef4444', water: '#3b82f6', earth: '#84cc16', air: '#a78bfa',
   };
-
   const typeEmojis: Record<string, string> = {
-    fire: '🔥',
-    water: '💧',
-    earth: '🌍',
-    air: '💨',
+    fire: '🔥', water: '💧', earth: '🌍', air: '💨',
   };
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px', fontFamily: 'Segoe UI, sans-serif' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '3rem', color: '#7c3aed', marginBottom: '8px' }}>🃏 SuiCards</h1>
-        <p style={{ color: '#a78bfa', fontSize: '1rem', marginBottom: '16px' }}>
-          On-Chain Card Battle • Powered by Walrus & Tatum Sui RPC
-        </p>
-        <p style={{ color: '#666', fontSize: '0.85rem', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
-          A fully decentralized card battle game on Sui blockchain. Game states are stored on 
-          <strong style={{ color: '#7c3aed' }}> Walrus decentralized storage</strong> and blockchain 
-          calls go through <strong style={{ color: '#7c3aed' }}>Tatum's Sui Mainnet RPC</strong>.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <div>
+          <h1 style={{ fontSize: '2.5rem', color: '#7c3aed', marginBottom: '4px' }}>🃏 SuiCards</h1>
+          <p style={{ color: '#a78bfa', fontSize: '0.85rem' }}>On-Chain Card Battle • Walrus + Tatum + Sui Mainnet</p>
+        </div>
+        <WalletButton />
       </div>
 
+      {/* Wallet banner */}
+      {!account && (
+        <div style={{ background: '#1a1a2e', border: '1px solid #7c3aed', padding: '14px 20px', borderRadius: '10px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '1.2rem' }}>💡</span>
+          <p style={{ color: '#a78bfa', fontSize: '0.85rem' }}>
+            Connect your Sui wallet to record game results on-chain and appear on the Mainnet leaderboard!
+          </p>
+        </div>
+      )}
+
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
         {(['game', 'leaderboard'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              padding: '10px 28px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
+              padding: '10px 28px', borderRadius: '8px', border: 'none', cursor: 'pointer',
               fontSize: '0.95rem',
               background: activeTab === tab ? '#7c3aed' : '#1a1a2e',
               color: activeTab === tab ? '#fff' : '#888',
@@ -101,13 +147,12 @@ const App = () => {
         <div>
           {!gameState ? (
             <div>
-              {/* How it works */}
               <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
                 {[
                   { icon: '🎴', title: 'Get Cards', desc: '4 random cards each' },
                   { icon: '⚔️', title: 'Battle', desc: 'Card vs card each round' },
                   { icon: '🐋', title: 'Walrus', desc: 'Game saved on-chain' },
-                  { icon: '🏆', title: 'Win', desc: 'Most health wins' },
+                  { icon: '🏆', title: 'Win', desc: 'Result recorded on Sui' },
                 ].map((item, i) => (
                   <div key={i} style={{ background: '#1a1a2e', padding: '16px', borderRadius: '12px', flex: 1, textAlign: 'center' }}>
                     <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>{item.icon}</div>
@@ -117,29 +162,11 @@ const App = () => {
                 ))}
               </div>
 
-              {/* Card types */}
-              <div style={{ background: '#1a1a2e', padding: '20px', borderRadius: '12px', marginBottom: '24px' }}>
-                <h3 style={{ color: '#a78bfa', marginBottom: '12px', fontSize: '0.95rem' }}>🃏 Card Types</h3>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {[
-                    { type: 'fire', name: '🔥 Fire', desc: 'High ATK, Med DEF' },
-                    { type: 'water', name: '💧 Water', desc: 'Balanced stats' },
-                    { type: 'earth', name: '🌍 Earth', desc: 'Low ATK, High DEF' },
-                    { type: 'air', name: '💨 Air', desc: 'Max ATK, Low DEF' },
-                  ].map((c, i) => (
-                    <div key={i} style={{ background: '#0a0a1a', padding: '10px 16px', borderRadius: '8px', borderLeft: `3px solid ${typeColors[c.type]}`, flex: 1 }}>
-                      <p style={{ color: typeColors[c.type], fontWeight: 'bold', fontSize: '0.85rem' }}>{c.name}</p>
-                      <p style={{ color: '#666', fontSize: '0.75rem' }}>{c.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Start game form */}
               <div style={{ background: '#1a1a2e', padding: '30px', borderRadius: '12px' }}>
                 <h2 style={{ marginBottom: '8px', fontSize: '1.2rem' }}>⚔️ Start a New Battle</h2>
                 <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.85rem' }}>
                   Enter two player names. Each gets 4 random cards. Most health after all rounds wins!
+                  {account && <span style={{ color: '#22c55e' }}> Results will be recorded on Sui Mainnet. ✅</span>}
                 </p>
                 <input
                   type="text"
@@ -166,7 +193,6 @@ const App = () => {
             </div>
           ) : (
             <div>
-              {/* Player cards */}
               <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
                 {[gameState.player1, gameState.player2].map((p, i) => (
                   <div key={i} style={{ background: '#1a1a2e', padding: '20px', borderRadius: '12px', flex: 1 }}>
@@ -189,14 +215,12 @@ const App = () => {
                 ))}
               </div>
 
-              {/* Last move highlight */}
               {lastMove && (
                 <div style={{ background: '#2d1b69', padding: '14px 20px', borderRadius: '10px', marginBottom: '16px', borderLeft: '3px solid #7c3aed' }}>
                   <p style={{ color: '#a78bfa', fontSize: '0.9rem' }}>⚡ {lastMove}</p>
                 </div>
               )}
 
-              {/* Battle log */}
               <div style={{ background: '#1a1a2e', padding: '20px', borderRadius: '12px', marginBottom: '16px', minHeight: '80px' }}>
                 <h3 style={{ marginBottom: '10px', fontSize: '0.95rem' }}>📜 Battle Log</h3>
                 {gameState.moves.length === 0 && (
@@ -207,26 +231,33 @@ const App = () => {
                 ))}
               </div>
 
-              {/* Walrus blob ID */}
               {blobId && (
-                <div style={{ background: '#1a1a2e', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <div style={{ background: '#1a1a2e', padding: '12px 16px', borderRadius: '8px', marginBottom: '12px' }}>
                   <p style={{ color: '#555', fontSize: '0.72rem', wordBreak: 'break-all' }}>
                     🐋 Walrus Blob ID: <span style={{ color: '#7c3aed' }}>{blobId}</span>
                   </p>
                 </div>
               )}
 
-              {/* Winner banner */}
+              {txHash && (
+                <div style={{ background: '#1a1a2e', padding: '12px 16px', borderRadius: '8px', marginBottom: '12px' }}>
+                  <p style={{ color: '#555', fontSize: '0.72rem', wordBreak: 'break-all' }}>
+                    ✅ Sui Tx: <a href={`https://suiscan.xyz/mainnet/tx/${txHash}`} target="_blank" rel="noreferrer" style={{ color: '#22c55e' }}>{txHash.slice(0, 20)}...</a>
+                  </p>
+                </div>
+              )}
+
               {gameOver && (
                 <div style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', padding: '24px', borderRadius: '12px', textAlign: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>
                     🏆 {gameState.winner ? `${gameState.winner} Wins!` : "It's a Draw!"}
                   </h2>
-                  <p style={{ color: '#ddd', fontSize: '0.85rem' }}>Game state permanently stored on Walrus • Check the Leaderboard!</p>
+                  <p style={{ color: '#ddd', fontSize: '0.85rem' }}>
+                    {account ? 'Result recorded on Sui Mainnet! ✅' : 'Connect wallet to record results on-chain!'}
+                  </p>
                 </div>
               )}
 
-              {/* Action buttons */}
               <div style={{ display: 'flex', gap: '10px' }}>
                 {!gameOver ? (
                   <button
@@ -238,7 +269,7 @@ const App = () => {
                 ) : (
                   <>
                     <button
-                      onClick={() => { setGameState(null); setBlobId(null); setGameOver(false); setLastMove(null); }}
+                      onClick={() => { setGameState(null); setBlobId(null); setGameOver(false); setLastMove(null); setTxHash(null); }}
                       style={{ flex: 1, padding: '14px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', cursor: 'pointer' }}
                     >
                       🔄 Play Again
@@ -247,7 +278,7 @@ const App = () => {
                       onClick={() => setActiveTab('leaderboard')}
                       style={{ flex: 1, padding: '14px', background: '#1a1a2e', color: '#fff', border: '1px solid #7c3aed', borderRadius: '8px', fontSize: '1rem', cursor: 'pointer' }}
                     >
-                      🏆 View Leaderboard
+                      🏆 Leaderboard
                     </button>
                   </>
                 )}
@@ -268,37 +299,26 @@ const App = () => {
               <p style={{ color: '#666' }}>No games played yet. Start a battle!</p>
             </div>
           ) : (
-            <div>
-              {leaderboard.map((entry, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '16px',
-                  background: '#0a0a1a', padding: '16px', borderRadius: '10px',
-                  marginBottom: '10px', borderLeft: `3px solid ${i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#cd7c2f' : '#7c3aed'}`
-                }}>
-                  <div style={{ fontSize: '1.5rem', width: '32px', textAlign: 'center' }}>
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{entry.player}</p>
-                    <p style={{ color: '#666', fontSize: '0.8rem' }}>{entry.totalGames} games played</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', textAlign: 'center' }}>
-                    <div>
-                      <p style={{ color: '#22c55e', fontWeight: 'bold' }}>{entry.wins}</p>
-                      <p style={{ color: '#666', fontSize: '0.72rem' }}>Wins</p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#ef4444', fontWeight: 'bold' }}>{entry.losses}</p>
-                      <p style={{ color: '#666', fontSize: '0.72rem' }}>Losses</p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#fbbf24', fontWeight: 'bold' }}>{entry.draws}</p>
-                      <p style={{ color: '#666', fontSize: '0.72rem' }}>Draws</p>
-                    </div>
-                  </div>
+            leaderboard.map((entry, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '16px',
+                background: '#0a0a1a', padding: '16px', borderRadius: '10px', marginBottom: '10px',
+                borderLeft: `3px solid ${i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#cd7c2f' : '#7c3aed'}`
+              }}>
+                <div style={{ fontSize: '1.5rem', width: '32px', textAlign: 'center' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
                 </div>
-              ))}
-            </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{entry.player}</p>
+                  <p style={{ color: '#666', fontSize: '0.8rem' }}>{entry.totalGames} games played</p>
+                </div>
+                <div style={{ display: 'flex', gap: '16px', textAlign: 'center' }}>
+                  <div><p style={{ color: '#22c55e', fontWeight: 'bold' }}>{entry.wins}</p><p style={{ color: '#666', fontSize: '0.72rem' }}>Wins</p></div>
+                  <div><p style={{ color: '#ef4444', fontWeight: 'bold' }}>{entry.losses}</p><p style={{ color: '#666', fontSize: '0.72rem' }}>Losses</p></div>
+                  <div><p style={{ color: '#fbbf24', fontWeight: 'bold' }}>{entry.draws}</p><p style={{ color: '#666', fontSize: '0.72rem' }}>Draws</p></div>
+                </div>
+              </div>
+            ))
           )}
           <button
             onClick={() => setActiveTab('game')}
@@ -309,7 +329,6 @@ const App = () => {
         </div>
       )}
 
-      {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: '30px', color: '#444', fontSize: '0.78rem' }}>
         <p>Built on Sui Blockchain • Walrus Decentralized Storage • Tatum Sui RPC</p>
         <p style={{ marginTop: '4px' }}>Tatum x Walrus Hackathon 2025</p>
