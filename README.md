@@ -6,7 +6,7 @@ SuiCards is a fully decentralized card battle game built on the **Sui blockchain
 
 No central server. No database. Just pure on-chain gaming. 🚀
 
-🌐 **Live Demo:** https://reimagined-pancake-xr55q4rwg949fw96-3000.app.github.dev
+🌐 **Live Demo:** https://suicards.vercel.app
 
 ---
 
