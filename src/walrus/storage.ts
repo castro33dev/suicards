@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-const PUBLISHER = '/walrus-publisher';
-const AGGREGATOR = '/walrus-aggregator';
+const IS_DEV = import.meta.env.DEV;
+
+const PUBLISHER = IS_DEV 
+  ? '/walrus-publisher'
+  : 'https://publisher.walrus-testnet.walrus.space';
+
+const AGGREGATOR = IS_DEV
+  ? '/walrus-aggregator'  
+  : 'https://aggregator.walrus-testnet.walrus.space';
 
 // Save data to Walrus
 export const saveToWalrus = async (data: object) => {
