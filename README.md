@@ -2,19 +2,30 @@
 
 > Built for the Tatum x Walrus Hackathon 2025
 
-SuiCards is a fully decentralized card battle game built on the **Sui blockchain**. Every game state, player deck, and match result is permanently stored on **Walrus decentralized storage** and all blockchain interactions are powered by **Tatum's enterprise-grade Sui RPC nodes**.
+SuiCards is a fully decentralized card battle game built on the **Sui blockchain**. Every game state and player deck is permanently stored on **Walrus decentralized storage**, all blockchain interactions are powered by **Tatum's enterprise-grade Sui RPC nodes**, and game results are recorded on-chain via a **deployed Move smart contract**.
 
 No central server. No database. Just pure on-chain gaming. 🚀
 
+🌐 **Live Demo:** https://reimagined-pancake-xr55q4rwg949fw96-3000.app.github.dev
+
 ---
 
-## 🎮 How It Works
+## 🏆 Hackathon Prizes Targeting
 
-1. **Enter player names** — Two players enter their names to start a battle
-2. **Get your deck** — Each player receives 4 random cards with unique attack and defense stats
-3. **Battle rounds** — Cards go head to head, dealing damage each round
-4. **Winner decided** — The player with the most health after all rounds wins
-5. **Saved on-chain** — Every game state is permanently stored on Walrus with a unique Blob ID
+- ⚡ **Best Use of Tatum Tools** — Tatum Sui Mainnet RPC powers all blockchain calls
+- 🌟 **Best Walrus Integration** — Game state stored on Walrus on every battle
+
+---
+
+## ✨ Features
+
+- 🃏 Card battle game with 8 unique cards across 4 types
+- 🔗 Sui wallet connection via `@mysten/dapp-kit`
+- 🐋 Game state saved to Walrus decentralized storage
+- ⛓️ Results recorded on Sui Mainnet smart contract
+- 🏆 Leaderboard tracking wins, losses, and draws
+- 🔍 Clickable Sui transaction links after every game
+- ⚡ Powered by Tatum's enterprise Sui RPC nodes
 
 ---
 
@@ -22,11 +33,28 @@ No central server. No database. Just pure on-chain gaming. 🚀
 
 | Technology | Usage |
 |-----------|-------|
-| **Sui Blockchain** | On-chain game logic and leaderboard |
-| **Walrus Storage** | Decentralized game state and deck storage |
-| **Tatum Sui RPC** | Enterprise-grade Sui node connection |
+| **Sui Blockchain** | Smart contract + game results |
+| **Walrus Storage** | Decentralized game state storage |
+| **Tatum Sui RPC** | Enterprise Sui Mainnet connection |
 | **React + TypeScript** | Frontend UI |
+| **@mysten/dapp-kit** | Sui wallet connection |
+| **Sui Move** | On-chain leaderboard contract |
 | **Vite** | Frontend build tool |
+
+---
+
+## 📋 Smart Contract
+
+Deployed on **Sui Mainnet**:
+
+| Object | ID |
+|--------|-----|
+| **Package** | `0xaec6ffd87cbb3230291aa29f944af7d2448c163285c4a9176fcab5ee3c4ccea4` |
+| **Leaderboard** | `0x77aa34b0c5f58caa0ac1c410b1c13f5597c206454347380c1fca1cfcfa12f3cd` |
+
+Key functions:
+- `record_result` — Records winner, loser, and draw status on-chain
+- `create_leaderboard` — Initializes the shared leaderboard object
 
 ---
 
@@ -41,6 +69,25 @@ No central server. No database. Just pure on-chain gaming. 🚀
 
 ---
 
+## 🐋 Walrus Integration
+
+Every game state is saved to Walrus when a battle starts:
+
+- **Publisher:** `https://publisher.walrus-testnet.walrus.space`
+- **Aggregator:** `https://aggregator.walrus-testnet.walrus.space`
+
+Each game gets a unique **Blob ID** as proof of decentralized storage.
+
+---
+
+## ⚡ Tatum RPC Integration
+
+All Sui blockchain calls go through Tatum's enterprise RPC:
+
+- **Mainnet:** `https://sui-mainnet.gateway.tatum.io`
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -51,63 +98,28 @@ No central server. No database. Just pure on-chain gaming. 🚀
 ### Installation
 
 ```bash
-# Clone the repo
 git clone https://github.com/castro33dev/suicards.git
 cd suicards
-
-# Install dependencies
 npm install
-
-# Create environment file
 cp .env.example .env.local
-
 # Add your Tatum API key to .env.local
-VITE_TATUM_API_KEY=your_tatum_api_key_here
-```
-
-### Run the app
-
-```bash
 npm run dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 🐋 Walrus Integration
-
-Every game state is saved to Walrus decentralized storage when a battle starts:
-
-- **Publisher:** `https://walrus-testnet-publisher.nodes.guru`
-- **Aggregator:** `https://walrus-testnet-aggregator.nodes.guru`
-
-Each game gets a unique **Blob ID** as proof of storage on Walrus.
-
----
-
-## ⚡ Tatum RPC Integration
-
-All Sui blockchain calls go through Tatum's enterprise RPC nodes:
-
-- **Testnet:** `https://sui-testnet.gateway.tatum.io`
-- **Mainnet:** `https://sui-mainnet.gateway.tatum.io`
 
 ---
 
 ## 📁 Project Structure
 ---
 
-## 🏆 Hackathon
+## 🔗 Links
 
-Built for the **Tatum x Walrus Hackathon** — May 23 to June 6, 2025.
-
-- 🌐 [Tatum](https://tatum.io)
+- 📦 [Smart Contract on SuiScan](https://suiscan.xyz/mainnet/object/0xaec6ffd87cbb3230291aa29f944af7d2448c163285c4a9176fcab5ee3c4ccea4)
 - 🐋 [Walrus](https://walrus.xyz)
+- ⚡ [Tatum](https://tatum.io)
 - 🔵 [Sui](https://sui.io)
 
 ---
 
 ## 📄 License
 
-MIT
+MIT — Built for Tatum x Walrus Hackathon 2025
