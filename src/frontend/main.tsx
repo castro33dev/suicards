@@ -7,8 +7,14 @@ import '@mysten/dapp-kit/dist/index.css';
 
 const queryClient = new QueryClient();
 
+const IS_DEV = import.meta.env.DEV;
+
 const networks = {
-  mainnet: { url: import.meta.env.VITE_SUI_RPC_URL },
+  mainnet: { 
+    url: IS_DEV 
+      ? '/sui-rpc' 
+      : 'https://sui-mainnet.gateway.tatum.io'
+  },
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

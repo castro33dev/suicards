@@ -4,11 +4,11 @@ const IS_DEV = import.meta.env.DEV;
 
 const PUBLISHER = IS_DEV 
   ? '/walrus-publisher'
-  : 'https://publisher.walrus-testnet.walrus.space';
+  : 'https://publisher.walrus-mainnet.walrus.space';
 
 const AGGREGATOR = IS_DEV
   ? '/walrus-aggregator'  
-  : 'https://aggregator.walrus-testnet.walrus.space';
+  : 'https://aggregator.walrus-mainnet.walrus.space';
 
 // Save data to Walrus
 export const saveToWalrus = async (data: object) => {

@@ -20,6 +20,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/walrus-aggregator/, ''),
       },
+      '/sui-rpc': {
+        target: 'https://sui-mainnet.gateway.tatum.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sui-rpc/, ''),
+        headers: {
+          'x-api-key': 't-6a134d876dcffd29f3321181-bef09c8f01544833bf3577fd',
+        },
+      },
     },
   },
 });
