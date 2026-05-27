@@ -7,13 +7,9 @@ import '@mysten/dapp-kit/dist/index.css';
 
 const queryClient = new QueryClient();
 
-const IS_DEV = import.meta.env.DEV;
-
 const networks = {
   mainnet: { 
-    url: IS_DEV 
-      ? '/sui-rpc' 
-      : 'https://sui-mainnet.gateway.tatum.io'
+    url: 'https://fullnode.mainnet.sui.io:443'
   },
 };
 
